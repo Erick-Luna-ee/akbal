@@ -233,7 +233,9 @@ elif page == "Modelo 3D del yacimiento":
         key="modelo3d_etapa_original",
     )
     row3d = df.loc[df["Etapa"] == stage_3d].iloc[0]
-
+    st.write("Prueba de actualización")
+    st.write("Etapa seleccionada:", stage_3d)
+    st.write("Presión de la etapa:", float(row3d["Presión (kg/cm²(a))"]))
    
     # Superficie conceptual de presión por etapa.
     # La presión de referencia y el agotamiento proceden del Excel.
