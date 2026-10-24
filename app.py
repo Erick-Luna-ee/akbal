@@ -2,6 +2,7 @@ from pathlib import Path
 import math
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 from openpyxl import load_workbook
 
@@ -14,46 +15,15 @@ BLUE = "#0B1F3A"
 TEAL = "#19A7A1"
 EXPECTED_STAGES = [0, 2, 5, 6, 7, 8]
 BOOK_PATH = Path(__file__).parent / "Excel AKBAL.xlsx"
-px.defaults.template = "plotly_dark"
 
 st.markdown(f"""
 <style>
-  :root {{
-    --akbal-navy: #071629;
-    --akbal-panel: #10243D;
-    --akbal-panel-2: #152D49;
-    --akbal-border: #294764;
-    --akbal-text: #F3F7FC;
-    --akbal-muted: #B7C8DA;
-    --akbal-accent: #35C6D0;
-  }}
-  .stApp {{ background: linear-gradient(135deg, #071629 0%, #0B1F36 55%, #102944 100%); color: var(--akbal-text); }}
-  [data-testid="stHeader"] {{ background: rgba(7,22,41,.94); }}
-  [data-testid="stSidebar"] {{ background: #061322; border-right: 1px solid #203B56; }}
-  [data-testid="stSidebar"] * {{ color: #F3F7FC !important; }}
-  [data-testid="stSidebar"] [data-testid="stRadio"] label {{ padding: 7px 10px; border-radius: 8px; }}
-  [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {{ background: #152D49; }}
-  h1, h2, h3, h4, p, li, label, .stMarkdown, [data-testid="stCaptionContainer"] {{ color: var(--akbal-text); }}
-  h1 {{ font-weight: 800; letter-spacing: -0.035em; }}
-  h2, h3 {{ font-weight: 700; letter-spacing: -0.02em; }}
-  [data-testid="stMetric"] {{ background: linear-gradient(145deg, #142D49, #0D2036); border: 1px solid #2A4968; padding: 17px 18px; border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.14); }}
-  [data-testid="stMetricLabel"] p {{ color: #C3D3E3 !important; font-size: .88rem; }}
-  [data-testid="stMetricValue"] {{ color: #FFFFFF !important; font-weight: 750; }}
-  [data-testid="stMetricDelta"] {{ color: #75DDE2 !important; }}
-  [data-testid="stDataFrame"], [data-testid="stTable"] {{ background: #10243D; border: 1px solid #294764; border-radius: 12px; overflow: hidden; }}
-  [data-testid="stAlert"] {{ border-radius: 10px; }}
-  [data-testid="stExpander"] {{ background: #10243D; border: 1px solid #294764; border-radius: 12px; }}
-  .stTextInput input, .stNumberInput input, .stSelectbox [data-baseweb="select"], .stTextArea textarea {{ background: #10243D !important; color: #F3F7FC !important; border-color: #355674 !important; }}
-  .stButton button {{ background: #123B5B; color: #FFFFFF; border: 1px solid #3B718F; border-radius: 9px; font-weight: 650; }}
-  .stButton button:hover {{ background: #185477; border-color: var(--akbal-accent); color: #FFFFFF; }}
-  hr {{ border-color: #294764; }}
-  .akbal-note {{ background: #112E49; color: #F3F7FC; padding: 14px 18px; border: 1px solid #2A5874; border-left: 4px solid {TEAL}; border-radius: 10px; }}
-  [data-testid="stPlotlyChart"] {{ background: #10243D; border: 1px solid #294764; border-radius: 12px; padding: 8px; }}
-  [data-testid="stTabs"] button {{ color: #C5D5E5; }}
-  [data-testid="stTabs"] button[aria-selected="true"] {{ color: #FFFFFF; border-bottom-color: var(--akbal-accent); }}
-  .block-container {{ padding-top: 2rem; padding-bottom: 3rem; max-width: 1500px; }}
-  .stCaption {{ color: var(--akbal-muted) !important; }}
-  [data-testid="stSidebar"] [data-testid="stCaptionContainer"] {{ color: #AFC3D8 !important; }}
+  .stApp {{ background: #F4F7FB; }}
+  [data-testid="stSidebar"] {{ background: {BLUE}; }}
+  [data-testid="stSidebar"] * {{ color: #F4F7FB !important; }}
+  h1, h2, h3 {{ color: {BLUE}; }}
+  div[data-testid="stMetric"] {{ background: white; border: 1px solid #D9E2EF; padding: 14px; border-radius: 12px; }}
+  .akbal-note {{ background: #E8F1FA; padding: 12px 16px; border-left: 4px solid {TEAL}; border-radius: 6px; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -100,7 +70,7 @@ def load_source(path_string: str, modified: float):
 
 st.sidebar.markdown("# AKBAL")
 st.sidebar.caption("Yacimientos I · Modelo de consulta")
-page = st.sidebar.radio("Navegación", ["Panel principal", "Caracterización", "Análisis PVT", "Historial de producción", "Expansión de fluidos", "Entrada de agua", "Retiro subterráneo", "Balance de materia", "Dashboard"])
+page = st.sidebar.radio("Navegación", ["Panel principal", "Caracterización", "Análisis PVT", "Historial de producción", "Expansión de fluidos", "Entrada de agua", "Retiro subterráneo", "Balance de materia", "Dashboard", "Modelo 3D del yacimiento"])
 st.sidebar.markdown("---")
 st.sidebar.caption("Etapas bloqueadas: 0 · 2 · 5 · 6 · 7 · 8")
 
@@ -236,6 +206,92 @@ elif page == "Dashboard":
     fig.update_layout(template="plotly_white",paper_bgcolor="rgba(0,0,0,0)"); st.plotly_chart(fig,use_container_width=True)
     st.subheader("Conclusiones técnicas preliminares")
     st.markdown(f"- La presión disminuye de {params['Pi']:,.0f} a {df.iloc[-1]['Presión (kg/cm²(a))']:,.0f} kg/cm²(a) a lo largo de las etapas registradas.\n- La presión de burbuja del modelo es {params['Pb']:,.0f} kg/cm²(a); las etapas 6, 7 y 8 están en región bifásica.\n- El influjo de agua calculado con el modelo lineal aumenta hasta {df.iloc[-1]['We (m³)']:,.0f} m³.\n- La estimación de N y RF queda pendiente de definir y validar la ecuación de balance de materia.")
+
+
+elif page == "Modelo 3D del yacimiento":
+    st.write("Exploración tridimensional esquemática del volumen del yacimiento y sus zonas conceptuales.")
+    st.info(
+        "Representación conceptual, no un modelo geológico real. El libro fuente aporta volumen bruto, "
+        "porosidad y saturación inicial, pero no coordenadas, dimensiones geométricas, espesor, profundidad "
+        "ni contacto aceite-agua medido. Por ello, la forma y la separación visual de las zonas son ilustrativas "
+        "y no están a escala; no deben interpretarse como contactos o límites geológicos reales."
+    )
+
+    stage_3d = st.selectbox(
+        "Consultar etapa original (solo lectura)",
+        EXPECTED_STAGES,
+        index=len(EXPECTED_STAGES) - 1,
+        key="modelo3d_etapa_original",
+    )
+    row3d = df.loc[df["Etapa"] == stage_3d].iloc[0]
+
+    # Coordenadas normalizadas sin unidades: geometría ilustrativa, no dimensiones del yacimiento.
+    # Se usan prismas conceptuales para visualizar límites y zonas; no se infieren contactos reales.
+    def add_prism(fig, x0, x1, y0, y1, z0, z1, color, name, opacity=0.38, showlegend=True):
+        vertices = [
+            (x0, y0, z0), (x1, y0, z0), (x1, y1, z0), (x0, y1, z0),
+            (x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1),
+        ]
+        xs, ys, zs = zip(*vertices)
+        # Triangulación de las seis caras del prisma.
+        i = [0, 0, 4, 4, 0, 0, 1, 1, 2, 2, 3, 3]
+        j = [1, 2, 5, 6, 1, 5, 2, 6, 3, 7, 0, 4]
+        k = [2, 3, 6, 7, 5, 4, 6, 5, 7, 6, 4, 7]
+        fig.add_trace(go.Mesh3d(
+            x=xs, y=ys, z=zs, i=i, j=j, k=k,
+            color=color, opacity=opacity, name=name, legendgroup=name,
+            showlegend=showlegend, hoverinfo="skip", flatshading=True,
+        ))
+
+    fig3d = go.Figure()
+    # La zona de aceite y la zona de agua se separan solo para comunicar el concepto.
+    add_prism(fig3d, 0, 10, 0, 6, 3.6, 8, "#19A7A1", "Zona conceptual asociada a aceite", 0.42)
+    add_prism(fig3d, 0, 10, 0, 6, 0, 2.4, "#2684FF", "Zona conceptual asociada a agua", 0.42)
+
+    # Marco externo como límites esquemáticos del volumen representado.
+    corners = {
+        "A": (0, 0, 0), "B": (10, 0, 0), "C": (10, 6, 0), "D": (0, 6, 0),
+        "E": (0, 0, 8), "F": (10, 0, 8), "G": (10, 6, 8), "H": (0, 6, 8),
+    }
+    edges = [("A","B"),("B","C"),("C","D"),("D","A"),("E","F"),("F","G"),("G","H"),("H","E"),("A","E"),("B","F"),("C","G"),("D","H")]
+    for a, b in edges:
+        fig3d.add_trace(go.Scatter3d(
+            x=[corners[a][0], corners[b][0]], y=[corners[a][1], corners[b][1]], z=[corners[a][2], corners[b][2]],
+            mode="lines", line=dict(color="#0B1F3A", width=5),
+            name="Límite esquemático del volumen", legendgroup="Límite esquemático del volumen",
+            showlegend=(a, b) == edges[0], hoverinfo="skip",
+        ))
+
+    fig3d.update_layout(
+        template="plotly_white", height=560,
+        margin=dict(l=0, r=0, t=45, b=0),
+        title="Modelo 3D conceptual · límites y zonas ilustrativas",
+        scene=dict(
+            xaxis=dict(title="Eje X normalizado", showbackground=True, backgroundcolor="rgba(11,31,58,0.04)", gridcolor="#D9E2EF"),
+            yaxis=dict(title="Eje Y normalizado", showbackground=True, backgroundcolor="rgba(11,31,58,0.04)", gridcolor="#D9E2EF"),
+            zaxis=dict(title="Eje Z normalizado", showbackground=True, backgroundcolor="rgba(11,31,58,0.04)", gridcolor="#D9E2EF"),
+            aspectmode="manual", aspectratio=dict(x=1.5, y=0.9, z=0.8),
+            camera=dict(eye=dict(x=1.6, y=1.6, z=1.25)),
+        ),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+    )
+    st.plotly_chart(fig3d, use_container_width=True, config={"responsive": True, "displaylogo": False, "scrollZoom": True})
+    st.caption("Colores: turquesa = zona conceptual asociada a aceite; azul = zona conceptual asociada a agua; líneas azul marino = límites esquemáticos. Usa el mouse o los gestos táctiles para girar y acercar/alejar.")
+
+    st.subheader(f"Indicadores de la etapa {stage_3d}")
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Presión", f"{row3d['Presión (kg/cm²(a))']:,.2f} kg/cm²(a)")
+    m2.metric("Estado calculado", str(row3d["Estado"]))
+    m3.metric("Agotamiento", f"{row3d['Agotamiento (%)']:,.2f}%")
+    m4, m5, m6 = st.columns(3)
+    m4.metric("Np", f"{row3d['Np (m³)']:,.2f} m³")
+    m5.metric("Gp", f"{row3d['Gp (m³)']:,.2f} m³")
+    m6.metric("Wp", f"{row3d['Wp (m³)']:,.2f} m³")
+    m7, m8, m9 = st.columns(3)
+    m7.metric("Eo", "N/D" if pd.isna(row3d["Eo (m³/m³)"]) else f"{row3d['Eo (m³/m³)']:,.4f} m³/m³")
+    m8.metric("We", f"{row3d['We (m³)']:,.2f} m³")
+    m9.metric("F", "N/D" if pd.isna(row3d["F (m³)"]) else f"{row3d['F (m³)']:,.2f} m³")
+    st.caption("Los indicadores proceden del historial y de las ecuaciones existentes en AKBAL. La selección solo consulta los datos; no modifica las etapas ni los cálculos.")
 
 st.markdown("---")
 st.caption("AKBAL · Prototipo técnico. Los datos de entrada y las etapas son de solo lectura. Valide el modelo con el responsable académico antes de usarlo para decisiones operativas.")
