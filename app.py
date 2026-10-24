@@ -240,18 +240,25 @@ elif page == "Modelo 3D del yacimiento":
     # Superficie conceptual de presión por etapa.
     # La presión de referencia y el agotamiento proceden del Excel.
     # La variación espacial es ilustrativa, no una medición del yacimiento.
+ 
     pressure_stage = float(row3d["Presión (kg/cm²(a))"])
     depletion = float(row3d["Agotamiento (%)"])
 
-    x = list(range(0, 11))
-    y = list(range(0, 11))
+    x = list(range(11))
+    y = list(range(11))
 
-    # Intensidad visual normalizada según el agotamiento de la etapa.
+    # Normalización de la etapa para distinguir visualmente cada fase.
+    stage_min = min(EXPECTED_STAGES)
+    stage_max = max(EXPECTED_STAGES)
+    stage_factor = (
+        (float(stage_3d) - stage_min) / (stage_max - stage_min)
+        if stage_max != stage_min else 0.0
+    )
+
     depletion_factor = max(0.0, min(1.0, depletion / 100.0))
 
-    # Se conserva la misma escala vertical para comparar etapas.
-    visual_amplitude = max(2.0, abs(float(params["Pi"]) - pressure_stage) * 0.12)
-    visual_amplitude *= 0.35 + 0.65 * depletion_factor
+    # Amplitud conceptual creciente para hacer visibles las diferencias.
+    visual_amplitude = 3.0 + 12.0 * stage_factor
 
     z = []
     for yy in y:
@@ -259,16 +266,14 @@ elif page == "Modelo 3D del yacimiento":
         for xx in x:
             xn = (xx - 5.0) / 5.0
             yn = (yy - 5.0) / 5.0
-
-            # Forma conceptual que varía con la etapa.
             radius = xn**2 + yn**2
-            bowl = max(0.0, 1.0 - radius / 2.0)
 
-            # La asimetría cambia suavemente con el agotamiento.
-            asymmetry = 0.25 * depletion_factor * (xn - yn)
-            local_drop = visual_amplitude * bowl * (1.0 + asymmetry)
+            # La forma se aplana y se vuelve asimétrica según la etapa.
+            bowl = max(0.0, 1.0 - radius / (1.0 + 0.8 * stage_factor))
+            tilt = stage_factor * (1.5 * xn - 0.8 * yn)
+            local_drop = visual_amplitude * bowl * (0.5 + depletion_factor)
 
-            row_z.append(pressure_stage - local_drop)
+            row_z.append(pressure_stage - local_drop + tilt)
         z.append(row_z)
 
 
