@@ -293,7 +293,15 @@ elif page == "Modelo 3D del yacimiento":
         scene=dict(
             xaxis=dict(title="X [unidad normalizada]", showbackground=True, backgroundcolor="#10243D", gridcolor="#294764"),
             yaxis=dict(title="Y [unidad normalizada]", showbackground=True, backgroundcolor="#10243D", gridcolor="#294764"),
-            zaxis=dict(title="Presión [kg/cm²(a)]", showbackground=True, backgroundcolor="#10243D", gridcolor="#294764"),
+           
+            zaxis=dict(
+                title="Presión [kg/cm²(a)]",
+                showbackground=True,
+                backgroundcolor="#10243D",
+                gridcolor="#294764",
+                autorange=True
+            ),
+
             aspectmode="manual", aspectratio=dict(x=1.25, y=1.0, z=0.75),
             camera=dict(eye=dict(x=1.55, y=1.55, z=1.2)),
         ),
