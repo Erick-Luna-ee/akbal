@@ -15,15 +15,25 @@ BLUE = "#0B1F3A"
 TEAL = "#19A7A1"
 EXPECTED_STAGES = [0, 2, 5, 6, 7, 8]
 BOOK_PATH = Path(__file__).parent / "Excel AKBAL.xlsx"
+px.defaults.template = "plotly_dark"
 
 st.markdown(f"""
 <style>
-  .stApp {{ background: #F4F7FB; }}
-  [data-testid="stSidebar"] {{ background: {BLUE}; }}
-  [data-testid="stSidebar"] * {{ color: #F4F7FB !important; }}
-  h1, h2, h3 {{ color: {BLUE}; }}
-  div[data-testid="stMetric"] {{ background: white; border: 1px solid #D9E2EF; padding: 14px; border-radius: 12px; }}
-  .akbal-note {{ background: #E8F1FA; padding: 12px 16px; border-left: 4px solid {TEAL}; border-radius: 6px; }}
+  :root {{ --akbal-navy:#071629; --akbal-panel:#10243D; --akbal-panel2:#152D49; --akbal-border:#294764; --akbal-text:#F3F7FC; --akbal-muted:#B7C8DA; --akbal-accent:{TEAL}; }}
+  .stApp {{ background: linear-gradient(135deg,#071629 0%,#0B1F36 55%,#102944 100%); color:var(--akbal-text); }}
+  [data-testid="stHeader"] {{ background:rgba(7,22,41,.94); }}
+  [data-testid="stSidebar"] {{ background:#061322; border-right:1px solid #203B56; }}
+  [data-testid="stSidebar"] * {{ color:#F3F7FC !important; }}
+  [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {{ background:#152D49; }}
+  h1,h2,h3,h4,p,li,label,.stMarkdown,[data-testid="stCaptionContainer"] {{ color:var(--akbal-text); }}
+  h1 {{ font-weight:800; letter-spacing:-.035em; }}
+  [data-testid="stMetric"] {{ background:linear-gradient(145deg,#142D49,#0D2036); border:1px solid #2A4968; padding:16px; border-radius:13px; box-shadow:0 8px 24px rgba(0,0,0,.14); }}
+  [data-testid="stMetricLabel"] p {{ color:#C3D3E3 !important; }}
+  [data-testid="stMetricValue"] {{ color:#FFFFFF !important; font-weight:750; }}
+  [data-testid="stDataFrame"],[data-testid="stTable"] {{ background:#10243D; border:1px solid #294764; border-radius:12px; }}
+  [data-testid="stAlert"] {{ border-radius:10px; }}
+  .akbal-note {{ background:#102944; color:#F3F7FC; padding:14px 17px; border:1px solid #294764; border-left:4px solid {TEAL}; border-radius:8px; }}
+  div[data-baseweb="select"] > div {{ background:#10243D; border-color:#365674; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -154,7 +164,7 @@ elif page == "Análisis PVT":
     plot = df.melt(id_vars=["Etapa","Presión (kg/cm²(a))"],value_vars=["Bo (m³/m³)","Rs (m³/m³)","Bg (m³/m³)"],var_name="Propiedad",value_name="Valor")
     prop = st.selectbox("Propiedad para graficar",["Bo (m³/m³)","Rs (m³/m³)","Bg (m³/m³)"])
     fig=px.line(df,x="Presión (kg/cm²(a))",y=prop,markers=True,text="Etapa",title=f"{prop} vs presión")
-    fig.update_xaxes(autorange="reversed"); fig.update_layout(template="plotly_white",paper_bgcolor="rgba(0,0,0,0)")
+    fig.update_xaxes(autorange="reversed"); fig.update_layout(template="plotly_dark",paper_bgcolor="rgba(0,0,0,0)")
     st.plotly_chart(fig,use_container_width=True)
     st.caption("Rs y Bg pueden requerir una interpretación por región de presión. Los valores cero del archivo no se sustituyen ni se interpolan.")
 
@@ -162,7 +172,7 @@ elif page == "Historial de producción":
     st.write("Historial inmutable leído del Excel. Rp se reproduce como Gp/Np cuando Np es distinto de cero.")
     st.dataframe(df[["Etapa","Presión (kg/cm²(a))","Np (m³)","Gp (m³)","Wp (m³)","Rp (m³/m³)"]],hide_index=True,use_container_width=True)
     fig=px.line(df,x="Etapa",y=["Np (m³)","Gp (m³)","Wp (m³)"],markers=True,title="Producción acumulada por etapa")
-    fig.update_layout(template="plotly_white",paper_bgcolor="rgba(0,0,0,0)"); st.plotly_chart(fig,use_container_width=True)
+    fig.update_layout(template="plotly_dark",paper_bgcolor="rgba(0,0,0,0)"); st.plotly_chart(fig,use_container_width=True)
     chosen=st.selectbox("Consultar etapa original (solo lectura)",EXPECTED_STAGES,index=len(EXPECTED_STAGES)-1)
     row=df[df["Etapa"]==chosen].iloc[0]
     st.subheader(f"Detalle de la etapa {chosen}")
@@ -173,20 +183,20 @@ elif page == "Expansión de fluidos":
     st.write("Eo se calcula con la ecuación del libro: por encima/en Pb, Bo − Boi; por debajo de Pb, se añade (Rsi − Rs) × Bg.")
     st.dataframe(df[["Etapa","Presión (kg/cm²(a))","Estado","Bo (m³/m³)","Rs (m³/m³)","Bg (m³/m³)","Eo (m³/m³)"]],hide_index=True,use_container_width=True)
     fig=px.line(df,x="Presión (kg/cm²(a))",y="Eo (m³/m³)",markers=True,text="Etapa",title="Expansión del sistema vs presión")
-    fig.update_xaxes(autorange="reversed"); fig.update_layout(template="plotly_white",paper_bgcolor="rgba(0,0,0,0)"); st.plotly_chart(fig,use_container_width=True)
+    fig.update_xaxes(autorange="reversed"); fig.update_layout(template="plotly_dark",paper_bgcolor="rgba(0,0,0,0)"); st.plotly_chart(fig,use_container_width=True)
 
 elif page == "Entrada de agua":
     st.write("Modelo lineal del Excel: We = Caq × (Pi − P). El equivalente volumétrico se calcula como We × Bw.")
     st.dataframe(df[["Etapa","Presión (kg/cm²(a))","ΔP (kg/cm²)","We (m³)","We·Bw (m³)"]],hide_index=True,use_container_width=True)
     fig=px.line(df,x="Etapa",y=["We (m³)","We·Bw (m³)"],markers=True,title="Entrada de agua por etapa")
-    fig.update_layout(template="plotly_white",paper_bgcolor="rgba(0,0,0,0)"); st.plotly_chart(fig,use_container_width=True)
+    fig.update_layout(template="plotly_dark",paper_bgcolor="rgba(0,0,0,0)"); st.plotly_chart(fig,use_container_width=True)
     st.caption("El acuífero lineal es una hipótesis del modelo didáctico, no una caracterización dinámica completa del acuífero.")
 
 elif page == "Retiro subterráneo":
     st.write("Se reproduce el retiro F del Excel. Para P ≥ Pb: F = Np·Bo + Wp·Bw. Para P < Pb se añade Np·(Rp − Rs)·Bg.")
     st.dataframe(df[["Etapa","Estado","Np·Bo (m³)","Wp·Bw (m³)","F (m³)"]],hide_index=True,use_container_width=True)
     fig=px.line(df,x="Etapa",y="F (m³)",markers=True,title="Retiro subterráneo F por etapa")
-    fig.update_layout(template="plotly_white",paper_bgcolor="rgba(0,0,0,0)"); st.plotly_chart(fig,use_container_width=True)
+    fig.update_layout(template="plotly_dark",paper_bgcolor="rgba(0,0,0,0)"); st.plotly_chart(fig,use_container_width=True)
 
 elif page == "Balance de materia":
     st.warning("No se calcularán N ni RF hasta que se establezca y documente la ecuación de balance de materia que corresponde al proyecto.")
@@ -203,7 +213,7 @@ elif page == "Dashboard":
     c4.metric("F final",f"{df.iloc[-1]['F (m³)']:,.2f} m³")
     chart=st.selectbox("Variable para comparar",["Np (m³)","Gp (m³)","Wp (m³)","Eo (m³/m³)","We (m³)","F (m³)","Agotamiento (%)"])
     fig=px.bar(df,x="Etapa",y=chart,color="Estado",title=f"{chart} por etapa original",text_auto=".3s")
-    fig.update_layout(template="plotly_white",paper_bgcolor="rgba(0,0,0,0)"); st.plotly_chart(fig,use_container_width=True)
+    fig.update_layout(template="plotly_dark",paper_bgcolor="rgba(0,0,0,0)"); st.plotly_chart(fig,use_container_width=True)
     st.subheader("Conclusiones técnicas preliminares")
     st.markdown(f"- La presión disminuye de {params['Pi']:,.0f} a {df.iloc[-1]['Presión (kg/cm²(a))']:,.0f} kg/cm²(a) a lo largo de las etapas registradas.\n- La presión de burbuja del modelo es {params['Pb']:,.0f} kg/cm²(a); las etapas 6, 7 y 8 están en región bifásica.\n- El influjo de agua calculado con el modelo lineal aumenta hasta {df.iloc[-1]['We (m³)']:,.0f} m³.\n- La estimación de N y RF queda pendiente de definir y validar la ecuación de balance de materia.")
 
@@ -244,9 +254,19 @@ elif page == "Modelo 3D del yacimiento":
         ))
 
     fig3d = go.Figure()
-    # La zona de aceite y la zona de agua se separan solo para comunicar el concepto.
-    add_prism(fig3d, 0, 10, 0, 6, 3.6, 8, "#19A7A1", "Zona conceptual asociada a aceite", 0.42)
-    add_prism(fig3d, 0, 10, 0, 6, 0, 2.4, "#2684FF", "Zona conceptual asociada a agua", 0.42)
+    # La separación visual cambia con la etapa seleccionada para hacer visible la navegación.
+    # Es una animación/esquema didáctico ligado al agotamiento calculado, NO un contacto real.
+    depletion = float(row3d["Agotamiento (%)"])
+    water_top = min(3.25, max(1.55, 2.15 + 0.010 * depletion))
+    oil_bottom = min(4.25, max(3.35, 4.05 - 0.008 * depletion))
+    add_prism(fig3d, 0, 10, 0, 6, oil_bottom, 8, "#19A7A1", "Zona conceptual asociada a aceite", 0.44)
+    add_prism(fig3d, 0, 10, 0, 6, 0, water_top, "#2684FF", "Zona conceptual asociada a agua", 0.48)
+    # Indicador de etapa: marcador vertical se desplaza según el agotamiento calculado.
+    marker_z = 2.8 + min(2.0, max(0.0, depletion / 100 * 2.0))
+    fig3d.add_trace(go.Scatter3d(x=[5], y=[3], z=[marker_z], mode="markers+text",
+        marker=dict(size=7, color="#F4C95D", line=dict(color="#071629", width=2)),
+        text=[f"Etapa {stage_3d}"], textposition="top center", textfont=dict(color="#F4C95D", size=12),
+        name=f"Indicador etapa {stage_3d}", showlegend=True, hovertemplate=f"Etapa {stage_3d}<br>Agotamiento: {depletion:.2f}%<extra></extra>"))
 
     # Marco externo como límites esquemáticos del volumen representado.
     corners = {
@@ -257,19 +277,19 @@ elif page == "Modelo 3D del yacimiento":
     for a, b in edges:
         fig3d.add_trace(go.Scatter3d(
             x=[corners[a][0], corners[b][0]], y=[corners[a][1], corners[b][1]], z=[corners[a][2], corners[b][2]],
-            mode="lines", line=dict(color="#0B1F3A", width=5),
+            mode="lines", line=dict(color="#35C6D0", width=5),
             name="Límite esquemático del volumen", legendgroup="Límite esquemático del volumen",
             showlegend=(a, b) == edges[0], hoverinfo="skip",
         ))
 
     fig3d.update_layout(
-        template="plotly_white", height=560,
+        template="plotly_dark", height=560,
         margin=dict(l=0, r=0, t=45, b=0),
         title="Modelo 3D conceptual · límites y zonas ilustrativas",
         scene=dict(
-            xaxis=dict(title="Eje X normalizado", showbackground=True, backgroundcolor="rgba(11,31,58,0.04)", gridcolor="#D9E2EF"),
-            yaxis=dict(title="Eje Y normalizado", showbackground=True, backgroundcolor="rgba(11,31,58,0.04)", gridcolor="#D9E2EF"),
-            zaxis=dict(title="Eje Z normalizado", showbackground=True, backgroundcolor="rgba(11,31,58,0.04)", gridcolor="#D9E2EF"),
+            xaxis=dict(title="Eje X normalizado", showbackground=True, backgroundcolor="#10243D", gridcolor="#294764"),
+            yaxis=dict(title="Eje Y normalizado", showbackground=True, backgroundcolor="#10243D", gridcolor="#294764"),
+            zaxis=dict(title="Eje Z normalizado", showbackground=True, backgroundcolor="#10243D", gridcolor="#294764"),
             aspectmode="manual", aspectratio=dict(x=1.5, y=0.9, z=0.8),
             camera=dict(eye=dict(x=1.6, y=1.6, z=1.25)),
         ),
@@ -291,7 +311,7 @@ elif page == "Modelo 3D del yacimiento":
     m7.metric("Eo", "N/D" if pd.isna(row3d["Eo (m³/m³)"]) else f"{row3d['Eo (m³/m³)']:,.4f} m³/m³")
     m8.metric("We", f"{row3d['We (m³)']:,.2f} m³")
     m9.metric("F", "N/D" if pd.isna(row3d["F (m³)"]) else f"{row3d['F (m³)']:,.2f} m³")
-    st.caption("Los indicadores proceden del historial y de las ecuaciones existentes en AKBAL. La selección solo consulta los datos; no modifica las etapas ni los cálculos.")
+    st.caption("Al cambiar la etapa se actualizan el marcador, la separación visual esquemática y los indicadores. La geometría es ilustrativa y no representa contactos reales ni cambia los cálculos originales.")
 
 st.markdown("---")
 st.caption("AKBAL · Prototipo técnico. Los datos de entrada y las etapas son de solo lectura. Valide el modelo con el responsable académico antes de usarlo para decisiones operativas.")
