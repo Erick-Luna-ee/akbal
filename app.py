@@ -234,22 +234,41 @@ elif page == "Modelo 3D del yacimiento":
     )
     row3d = df.loc[df["Etapa"] == stage_3d].iloc[0]
 
-    # Superficie conceptual tipo mapa de presión. La presión de referencia sí procede del Excel;
-    # la variación espacial se normaliza únicamente para visualizar la tendencia, no es dato medido.
+   
+    # Superficie conceptual de presión por etapa.
+    # La presión de referencia y el agotamiento proceden del Excel.
+    # La variación espacial es ilustrativa, no una medición del yacimiento.
     pressure_stage = float(row3d["Presión (kg/cm²(a))"])
     depletion = float(row3d["Agotamiento (%)"])
+
     x = list(range(0, 11))
     y = list(range(0, 11))
+
+    # Intensidad visual normalizada según el agotamiento de la etapa.
+    depletion_factor = max(0.0, min(1.0, depletion / 100.0))
+
+    # Se conserva la misma escala vertical para comparar etapas.
+    visual_amplitude = max(2.0, abs(float(params["Pi"]) - pressure_stage) * 0.12)
+    visual_amplitude *= 0.35 + 0.65 * depletion_factor
+
     z = []
     for yy in y:
         row_z = []
         for xx in x:
-            # Depresión conceptual central que aumenta según el agotamiento calculado de la etapa.
-            radius = ((xx - 5.0) / 5.0) ** 2 + ((yy - 5.0) / 5.0) ** 2
+            xn = (xx - 5.0) / 5.0
+            yn = (yy - 5.0) / 5.0
+
+            # Forma conceptual que varía con la etapa.
+            radius = xn**2 + yn**2
             bowl = max(0.0, 1.0 - radius / 2.0)
-            pressure_drop_visual = (0.04 * abs(pressure_stage - params["Pi"])) + (0.025 * depletion)
-            row_z.append(pressure_stage - pressure_drop_visual * bowl)
+
+            # La asimetría cambia suavemente con el agotamiento.
+            asymmetry = 0.25 * depletion_factor * (xn - yn)
+            local_drop = visual_amplitude * bowl * (1.0 + asymmetry)
+
+            row_z.append(pressure_stage - local_drop)
         z.append(row_z)
+
 
     fig3d = go.Figure(data=[go.Surface(
         x=x,
