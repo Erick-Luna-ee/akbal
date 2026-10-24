@@ -219,12 +219,11 @@ elif page == "Dashboard":
 
 
 elif page == "Modelo 3D del yacimiento":
-    st.write("Exploración tridimensional esquemática del volumen del yacimiento y sus zonas conceptuales.")
+    st.write("Superficie conceptual de presión por etapa.")
     st.info(
-        "Representación conceptual, no un modelo geológico real. El libro fuente aporta volumen bruto, "
-        "porosidad y saturación inicial, pero no coordenadas, dimensiones geométricas, espesor, profundidad "
-        "ni contacto aceite-agua medido. Por ello, la forma y la separación visual de las zonas son ilustrativas "
-        "y no están a escala; no deben interpretarse como contactos o límites geológicos reales."
+        "La superficie usa la presión registrada para la etapa seleccionada. La forma espacial es conceptual: "
+        "el Excel no contiene una malla de presión, coordenadas ni dimensiones del yacimiento. No representa "
+        "una simulación numérica ni una distribución geológica medida."
     )
 
     stage_3d = st.selectbox(
@@ -235,74 +234,66 @@ elif page == "Modelo 3D del yacimiento":
     )
     row3d = df.loc[df["Etapa"] == stage_3d].iloc[0]
 
-    # Coordenadas normalizadas sin unidades: geometría ilustrativa, no dimensiones del yacimiento.
-    # Se usan prismas conceptuales para visualizar límites y zonas; no se infieren contactos reales.
-    def add_prism(fig, x0, x1, y0, y1, z0, z1, color, name, opacity=0.38, showlegend=True):
-        vertices = [
-            (x0, y0, z0), (x1, y0, z0), (x1, y1, z0), (x0, y1, z0),
-            (x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1),
-        ]
-        xs, ys, zs = zip(*vertices)
-        # Triangulación de las seis caras del prisma.
-        i = [0, 0, 4, 4, 0, 0, 1, 1, 2, 2, 3, 3]
-        j = [1, 2, 5, 6, 1, 5, 2, 6, 3, 7, 0, 4]
-        k = [2, 3, 6, 7, 5, 4, 6, 5, 7, 6, 4, 7]
-        fig.add_trace(go.Mesh3d(
-            x=xs, y=ys, z=zs, i=i, j=j, k=k,
-            color=color, opacity=opacity, name=name, legendgroup=name,
-            showlegend=showlegend, hoverinfo="skip", flatshading=True,
-        ))
-
-    fig3d = go.Figure()
-    # La separación visual cambia con la etapa seleccionada para hacer visible la navegación.
-    # Es una animación/esquema didáctico ligado al agotamiento calculado, NO un contacto real.
+    # Superficie conceptual tipo mapa de presión. La presión de referencia sí procede del Excel;
+    # la variación espacial se normaliza únicamente para visualizar la tendencia, no es dato medido.
+    pressure_stage = float(row3d["Presión (kg/cm²(a))"])
     depletion = float(row3d["Agotamiento (%)"])
-    water_top = min(3.25, max(1.55, 2.15 + 0.010 * depletion))
-    oil_bottom = min(4.25, max(3.35, 4.05 - 0.008 * depletion))
-    add_prism(fig3d, 0, 10, 0, 6, oil_bottom, 8, "#19A7A1", "Zona conceptual asociada a aceite", 0.44)
-    add_prism(fig3d, 0, 10, 0, 6, 0, water_top, "#2684FF", "Zona conceptual asociada a agua", 0.48)
-    # Indicador de etapa: marcador vertical se desplaza según el agotamiento calculado.
-    marker_z = 2.8 + min(2.0, max(0.0, depletion / 100 * 2.0))
-    fig3d.add_trace(go.Scatter3d(x=[5], y=[3], z=[marker_z], mode="markers+text",
-        marker=dict(size=7, color="#F4C95D", line=dict(color="#071629", width=2)),
-        text=[f"Etapa {stage_3d}"], textposition="top center", textfont=dict(color="#F4C95D", size=12),
-        name=f"Indicador etapa {stage_3d}", showlegend=True, hovertemplate=f"Etapa {stage_3d}<br>Agotamiento: {depletion:.2f}%<extra></extra>"))
+    x = list(range(0, 11))
+    y = list(range(0, 11))
+    z = []
+    for yy in y:
+        row_z = []
+        for xx in x:
+            # Depresión conceptual central que aumenta según el agotamiento calculado de la etapa.
+            radius = ((xx - 5.0) / 5.0) ** 2 + ((yy - 5.0) / 5.0) ** 2
+            bowl = max(0.0, 1.0 - radius / 2.0)
+            pressure_drop_visual = (0.04 * abs(pressure_stage - params["Pi"])) + (0.025 * depletion)
+            row_z.append(pressure_stage - pressure_drop_visual * bowl)
+        z.append(row_z)
 
-    # Marco externo como límites esquemáticos del volumen representado.
-    corners = {
-        "A": (0, 0, 0), "B": (10, 0, 0), "C": (10, 6, 0), "D": (0, 6, 0),
-        "E": (0, 0, 8), "F": (10, 0, 8), "G": (10, 6, 8), "H": (0, 6, 8),
-    }
-    edges = [("A","B"),("B","C"),("C","D"),("D","A"),("E","F"),("F","G"),("G","H"),("H","E"),("A","E"),("B","F"),("C","G"),("D","H")]
-    for a, b in edges:
-        fig3d.add_trace(go.Scatter3d(
-            x=[corners[a][0], corners[b][0]], y=[corners[a][1], corners[b][1]], z=[corners[a][2], corners[b][2]],
-            mode="lines", line=dict(color="#35C6D0", width=5),
-            name="Límite esquemático del volumen", legendgroup="Límite esquemático del volumen",
-            showlegend=(a, b) == edges[0], hoverinfo="skip",
-        ))
-
+    fig3d = go.Figure(data=[go.Surface(
+        x=x,
+        y=y,
+        z=z,
+        surfacecolor=z,
+        colorscale=[[0.0, "#B83A3A"], [0.25, "#D87955"], [0.5, "#E9D77E"], [0.75, "#9CCB91"], [1.0, "#238B63"]],
+        colorbar=dict(title="P [kg/cm²(a)]", thickness=16, len=0.78),
+        contours=dict(z=dict(show=False)),
+        hovertemplate="X: %{x}<br>Y: %{y}<br>Presión conceptual: %{z:.2f} kg/cm²(a)<extra></extra>",
+        name="Presión conceptual",
+    )])
     fig3d.update_layout(
-        template="plotly_dark", height=560,
+        template="plotly_dark",
+        height=560,
         margin=dict(l=0, r=0, t=45, b=0),
-        title="Modelo 3D conceptual · límites y zonas ilustrativas",
+        title=f"Superficie conceptual de presión · Etapa {stage_3d}",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
         scene=dict(
-            xaxis=dict(title="Eje X normalizado", showbackground=True, backgroundcolor="#10243D", gridcolor="#294764"),
-            yaxis=dict(title="Eje Y normalizado", showbackground=True, backgroundcolor="#10243D", gridcolor="#294764"),
-            zaxis=dict(title="Eje Z normalizado", showbackground=True, backgroundcolor="#10243D", gridcolor="#294764"),
-            aspectmode="manual", aspectratio=dict(x=1.5, y=0.9, z=0.8),
-            camera=dict(eye=dict(x=1.6, y=1.6, z=1.25)),
+            xaxis=dict(title="X [unidad normalizada]", showbackground=True, backgroundcolor="#10243D", gridcolor="#294764"),
+            yaxis=dict(title="Y [unidad normalizada]", showbackground=True, backgroundcolor="#10243D", gridcolor="#294764"),
+            zaxis=dict(title="Presión [kg/cm²(a)]", showbackground=True, backgroundcolor="#10243D", gridcolor="#294764"),
+            aspectmode="manual", aspectratio=dict(x=1.25, y=1.0, z=0.75),
+            camera=dict(eye=dict(x=1.55, y=1.55, z=1.2)),
         ),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
     )
-    st.plotly_chart(fig3d, use_container_width=True, config={"responsive": True, "displaylogo": False, "scrollZoom": True})
-    st.caption("Colores: turquesa = zona conceptual asociada a aceite; azul = zona conceptual asociada a agua; líneas azul marino = límites esquemáticos. Usa el mouse o los gestos táctiles para girar y acercar/alejar.")
+    st.plotly_chart(
+        fig3d,
+        use_container_width=True,
+        config={"responsive": True, "displaylogo": False, "scrollZoom": True},
+        key=f"modelo3d_presion_etapa_{stage_3d}",
+    )
+    st.caption(
+        "La escala de color representa la presión conceptual en kg/cm²(a). La presión de referencia cambia "
+        "con la etapa del Excel; la forma de la superficie es ilustrativa porque no hay datos espaciales medidos. "
+        "Puedes girar, desplazar y acercar/alejar con el ratón o los gestos táctiles."
+    )
 
     st.subheader(f"Indicadores de la etapa {stage_3d}")
     m1, m2, m3 = st.columns(3)
-    m1.metric("Presión", f"{row3d['Presión (kg/cm²(a))']:,.2f} kg/cm²(a)")
+    m1.metric("Presión", f"{pressure_stage:,.2f} kg/cm²(a)")
     m2.metric("Estado calculado", str(row3d["Estado"]))
-    m3.metric("Agotamiento", f"{row3d['Agotamiento (%)']:,.2f}%")
+    m3.metric("Agotamiento", f"{depletion:,.2f}%")
     m4, m5, m6 = st.columns(3)
     m4.metric("Np", f"{row3d['Np (m³)']:,.2f} m³")
     m5.metric("Gp", f"{row3d['Gp (m³)']:,.2f} m³")
@@ -311,7 +302,6 @@ elif page == "Modelo 3D del yacimiento":
     m7.metric("Eo", "N/D" if pd.isna(row3d["Eo (m³/m³)"]) else f"{row3d['Eo (m³/m³)']:,.4f} m³/m³")
     m8.metric("We", f"{row3d['We (m³)']:,.2f} m³")
     m9.metric("F", "N/D" if pd.isna(row3d["F (m³)"]) else f"{row3d['F (m³)']:,.2f} m³")
-    st.caption("Al cambiar la etapa se actualizan el marcador, la separación visual esquemática y los indicadores. La geometría es ilustrativa y no representa contactos reales ni cambia los cálculos originales.")
 
 st.markdown("---")
 st.caption("AKBAL · Prototipo técnico. Los datos de entrada y las etapas son de solo lectura. Valide el modelo con el responsable académico antes de usarlo para decisiones operativas.")
